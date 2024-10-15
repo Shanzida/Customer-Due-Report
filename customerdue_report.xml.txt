@@ -1,0 +1,59 @@
+<t t-name="studio_report_document">
+                    <t t-call="web.external_layout">
+                        <div class="page"><div class="oe_structure"/></div>
+                        <table class="table table-condensed" style="width: 100%; table-layout: auto; font-family: helvetica !important; border-collapse: collapse; border: 1px solid #020146 !important;">
+                <thead>
+                    <tr style="border: 1px solid #020146 !important; font-family: helvetica !important;">
+                        <th style="border: 1px solid #020146; font-weight: bold; font-size: 12px !important; text-align:center; vertical-align: middle;">Customer Name</th>
+                        <th style="border: 1px solid #020146; font-weight: bold; font-size: 12px !important; text-align:center; vertical-align: middle;">Mobile Number</th>
+                        <th style="border: 1px solid #020146; font-weight: bold; font-size: 12px !important; text-align:center; vertical-align: middle;">Balance/Due Amounts Now</th>
+                        <th style="border: 1px solid #020146; font-weight: bold; font-size: 12px !important; text-align:center; vertical-align: middle;">Last Payment Was</th>
+                        <th style="border: 1px solid #020146; font-weight: bold; font-size: 12px !important; text-align:center; vertical-align: middle;">Date of Last Payment</th>
+                    </tr>
+                </thead>
+                <tbody style="font-family: helvetica !important; border: 1px solid #020146 !important;">
+                    <t t-set="total_amount_residual" t-value="0.0"/> <!-- Initialize total variable -->
+                    <t t-set="total_amount_payment" t-value="0.0"/>
+                    <!-- Use read_group to sum amount_residual grouped by partner_id -->
+                    <t t-foreach="env['account.move'].read_group([], ['partner_id', 'amount_residual:sum'], ['partner_id'])" t-as="grouped_partner">
+                        <tr style="border: 1px solid #020146 !important;">
+                            <td style="border: 1px solid #020146; font-size: 12px !important; padding: 2px !important; text-align: center;"> 
+                                <t t-esc="grouped_partner['partner_id'][1]"/> <!-- Customer Name -->
+                            </td>
+                            <td style="border: 1px solid #020146; font-size: 12px !important; padding: 2px !important; text-align: center;">
+                                <t t-set="partner" t-value="env['res.partner'].browse(grouped_partner['partner_id'][0])"/>
+                                <t t-esc="partner.mobile"/> <!-- Mobile Number -->
+                            </td>
+                            <td style="border: 1px solid #020146; font-size: 12px !important; padding: 2px !important; text-align: center;">
+                                <t t-esc="grouped_partner['amount_residual']"/> <!-- Sum of Due Amount -->
+                                <t t-set="total_amount_residual" t-value="total_amount_residual + grouped_partner['amount_residual']"/>
+                            </td>
+                            <td style="border: 1px solid #020146; font-size: 12px !important; padding: 2px !important; text-align: center;">
+                                <!-- Use ORM to find last payment -->
+                                <t t-set="last_payment" t-value="env['account.payment'].search([('partner_id', '=', grouped_partner['partner_id'][0])], order='date desc', limit=1)"/>
+                                <t t-esc="last_payment.amount"/> <!-- Last Payment Amount -->
+                                <t t-set="total_amount_payment" t-value="total_amount_payment + last_payment.amount"/>
+
+                            </td>
+                            <td style="border: 1px solid #020146; font-size: 12px !important; padding: 2px !important; text-align: center;">
+                                <t t-esc="last_payment.date"/> <!-- Last Payment Date -->
+                            </td>
+                        </tr>
+                    </t>
+
+                    <!-- Add a row to display the total amount -->
+                    <tr style="border: 1px solid #020146 !important; font-weight: bold;">
+                        <td colspan="2" style="text-align: right; font-size: 12px !important; padding: 2px !important;">Total</td>
+                        <td style="border: 1px solid #020146; font-size: 12px !important; padding: 2px !important; text-align: center;">
+                            <t t-esc="total_amount_residual"/> <!-- Total of all due amounts -->
+                        </td>
+                        <td style="border: 1px solid #020146; font-size: 12px !important; padding: 2px !important; text-align: center;">
+                            <t t-esc="total_amount_payment"/> <!-- Total of all due amounts -->
+                        </td>
+                        <td colspan="1"/> <!-- Empty cells to align the total properly -->
+                    </tr>
+
+                </tbody>
+            </table>
+                    </t>
+                </t>
